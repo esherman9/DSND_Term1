@@ -17,6 +17,7 @@ import os
 from PIL import Image
 
 # torch.manual_seed(43) # does it make sense to set this for entire project?
+print("PyTorch Version: ",torch.__version__)
 
 parser = argparse.ArgumentParser(
     'train selected pytorch model to detect flower type from image')
@@ -24,9 +25,9 @@ parser = argparse.ArgumentParser(
 parser.add_argument('data_dir', type=str, help='root directory for images')
 parser.add_argument('save_dir', type=str, help='directory to save model checkpoints')
 parser.add_argument('arch', type=str, help="model architecture (e.g. 'vgg16')",
-    choices = ['vgg13', 'vgg16', 'vgg16_bn'])
-parser.add_argument('--learn_rate', type=str, help='learning rate hyperparameter')
-parser.add_argument('--epochs', type=int, help='number of epochs to train over')
+    choices = ['vgg16', 'vgg16_bn', 'resnet18', 'densenet121', 'squeezenet'])
+parser.add_argument('--learn_rate', type=int, default=0.01, help='learning rate hyperparameter')
+parser.add_argument('--epochs', type=int, default=3, help='number of epochs to train over')
 parser.add_argument('--GPU', help='use GPU for training', action='store_true')
 
 # hidden units doesn't seem like something we want to parameterize...
@@ -42,5 +43,8 @@ dataloaders = utils.load_data(args.data_dir, args.arch)
 cat_names = utils.category_names('cat_to_name.json')
 
 # builds network, trains, displays training stats, saves checkpoint
-modelfuncs.build_network(
+model, optimizer, epochs_trained = modelfuncs.build_network(
     args.arch, dataloaders, args.GPU, args.learn_rate, args.epochs)
+
+# if using early stopping, args.epochs could differ from actual...
+modelfuncs.save_checkpoint(model, optimizer, epochs_trained, args.save_dir)
