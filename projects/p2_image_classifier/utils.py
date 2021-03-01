@@ -5,17 +5,14 @@ from torchvision import datasets, transforms, models
 import matplotlib.pyplot as plt
 import helper
 import json
+import numpy as np
+import os
 
 def load_data(data_dir, arch):
     '''load data with torch.dataloader'''
 
     print('Loading data from {}...'.format(data_dir))
-
     torch.manual_seed(43)
-
-    # train_dir = data_dir + '/train'
-    # valid_dir = data_dir + '/valid'
-    # test_dir = data_dir + '/test'
     batch_size = 24
 
     # Image transformations
@@ -45,7 +42,7 @@ def load_data(data_dir, arch):
         ])
     }
 
-    # Create train, test, validation datasets
+    # Create train, test, validation datasets from directories
     image_datasets = {x: datasets.ImageFolder(data_dir + '\\' + x,
         data_transforms[x]) for x in ['train', 'test', 'valid']}
 
@@ -53,31 +50,41 @@ def load_data(data_dir, arch):
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x],
         batch_size=batch_size, shuffle=True) for x in ['train', 'test', 'valid']}
 
-    # Load the datasets with ImageFolder
-    # training_data = datasets.ImageFolder(train_dir, train_data_transforms)
-    # test_data = datasets.ImageFolder(test_dir, test_data_transforms)
-    # validation_data = datasets.ImageFolder(valid_dir, valid_data_transforms)
-
-    # Store idx_to_class in addition to default class_to_idx for easier lookups
-    # Added to model after training in modelfuncs
-    # idx_to_class_items = training_data.class_to_idx.items()
-
-    # Define dataloaders from the image datasets and the trainforms
-    # for d_set in [training_data, test_data, validation_data]:
-    #     train_dataloader = torch.utils.data.DataLoader(training_data, batch_size, shuffle=True)
-    #     test_dataloader = torch.utils.data.DataLoader(test_data, batch_size, shuffle=True)
-    #     valid_dataloader = torch.utils.data.DataLoader(validation_data, batch_size, shuffle=True)
-
-    dataloaders['idx_to_class'] = image_datasets['train'].class_to_idx.items()
-    #
-    # dataloaders = {
-    #     'train': train_dataloader,
-    #     'test': test_dataloader,
-    #     'valid': valid_dataloader,
-    #     'idx_to_class_items': idx_to_class_items
-    #     }
-
     return dataloaders
+
+def center_crop(pil, crop_width, crop_height):
+    img_width, img_height = pil.size
+    return pil.crop(((img_width - crop_width) // 2,
+                         (img_height - crop_height) // 2,
+                         (img_width + crop_width) // 2,
+                         (img_height + crop_height) // 2))
+
+def process_image(image):
+    ''' Scales, crops, and normalizes a PIL image for a PyTorch model,
+        returns an Numpy array '''
+
+    # shrink shorter side to 256, keeping aspect ratio
+    thumb_size = (image.width, 256) if image.height < image.width else (256, image.height)
+    crop_width, crop_height = (224, 224)
+    means, stds = np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225])
+
+    image.thumbnail(thumb_size)
+    image = center_crop(image, crop_width, crop_height)
+
+    np_image = np.array(image)
+    np_image = np_image / 255 # scale values between 0 and 1
+    np_image = (np_image - means) / stds # normalize around 0 as expected by network
+    np_image = np.transpose(np_image, axes=(2, 0, 1)) # reorder color channel first
+
+    return np_image
+
+def sample_image():
+    '''Returns a random image from one of the test folders'''
+    n = np.random.choice(range(1, 103))
+    path = 'flowers\\test\\' + str(n) + '\\'
+    img_path = path + np.random.choice(os.listdir(path))
+    #print(img_path)
+    return img_path
 
 def category_names(path):
     with open(path, 'r') as f:
