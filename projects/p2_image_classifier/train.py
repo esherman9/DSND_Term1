@@ -23,7 +23,7 @@ parser.add_argument(
 #     'save_dir', type=str, help='directory to save model checkpoints')
 parser.add_argument(
     'arch', type=str, help="model architecture (e.g. 'vgg16')",
-    choices = ['vgg16', 'vgg16_bn', 'resnet18', 'densenet121', 'squeezenet'])
+    choices = ['vgg16', 'vgg16_bn', 'resnet50', 'densenet121', 'squeezenet'])
 parser.add_argument(
     '--learn_rate', type=int, default=0.01, help='learning rate hyperparameter')
 parser.add_argument(

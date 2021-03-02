@@ -27,58 +27,55 @@ def build_network(architecture, dataloaders, GPU, lr, epochs):
 
     # 1) Initialize pretrained model
     # 2) Reshape clf to match outputs with no. of classes in the new dataset
-        # vgg16_bn is ok, but need to update others for proper requires_grad
-
+        # Freeze feature detection parameters only
+        # Replace last layer of classifier or fc layer to fit flower data
+    # 3) Define optimization
     if architecture == 'vgg16':
-        model = models.vgg16(pretrained=True)
-        model.classifier[-1] = nn.Sequential(
-            nn.Linear(4096, n_classes), nn.LogSoftmax(dim=1))
-        # Freeze feature detection parameters
-        for param in model.features.parameters(): # or model.parameters
+        model = models.vgg16(pretrained=True).to(device)
+        for param in model.features.parameters():
             param.requires_grad = False
+        model.classifier[-1] = nn.Sequential(
+            nn.Linear(4096, n_classes), nn.LogSoftmax(dim=1)).to(device)
+        optimizer = optim.SGD(model.classifier.parameters(), lr=lr, momentum=0.9)
 
     elif architecture == 'vgg16_bn':
         model = models.vgg16_bn(pretrained=True).to(device)
-        # Freeze feature detection parameters
-        for param in model.features.parameters(): # or model.features.parameters
+        for param in model.features.parameters():
             param.requires_grad = False
         model.classifier[-1] = nn.Sequential(
-        nn.Linear(4096, n_classes), nn.LogSoftmax(dim=1)).to(device)
+            nn.Linear(4096, n_classes), nn.LogSoftmax(dim=1)).to(device)
+        optimizer = optim.SGD(model.classifier.parameters(), lr=lr, momentum=0.9)
 
     elif architecture == 'resnet50':
-        model = models.resnet50(pretrained=True)
-        model.fc = nn.Sequential(
-        nn.Linear(512, n_classes), nn.LogSoftmax(dim=1))
-        # Freeze feature detection parameters
-        for param in model.features.parameters(): # or model.parameters
+        model = models.resnet50(pretrained=True).to(device)
+        for param in model.parameters():
             param.requires_grad = False
+        model.fc = nn.Sequential(
+            nn.Linear(2048, n_classes), nn.LogSoftmax(dim=1)).to(device)
+        optimizer = optim.SGD(model.fc.parameters(), lr=lr, momentum=0.9)
 
     elif architecture == 'densenet121':
-        model = models.densenet121(pretrained=True)
-        model.classifier = nn.Sequential(
-            nn.Linear(1024, n_classes), nn.LogSoftmax(dim=1))
-        # Freeze feature detection parameters
-        for param in model.features.parameters(): # or model.parameters
+        model = models.densenet121(pretrained=True).to(device)
+        for param in model.features.parameters():
             param.requires_grad = False
+        model.classifier = nn.Sequential(
+            nn.Linear(1024, n_classes), nn.LogSoftmax(dim=1)).to(device)
+        optimizer = optim.SGD(model.classifier.parameters(), lr=lr, momentum=0.9)
 
     elif architecture == 'squeezenet':
-        model = models.squeezenet1_0(pretrained=True)
-        model.classifier[1] = nn.Conv2d(
-            512, n_classes, kernel_size=(1,1), stride=(1,1))
-        # Freeze feature detection parameters
-        for param in model.features.parameters(): # or model.parameters
+        model = models.squeezenet1_0(pretrained=True).to(device)
+        for param in model.features.parameters():
             param.requires_grad = False
+        model.classifier[1] = nn.Conv2d(
+            512, n_classes, kernel_size=(1,1), stride=(1,1)).to(device)
+        optimizer = optim.SGD(model.classifier.parameters(), lr=lr, momentum=0.9)
 
     summary(model, (3, 224, 224))
 
-    # 3) Define loss function and optimization algorithm for training
-
+    # Define loss function
     criterion = nn.NLLLoss()
 
-    optimizer = optim.SGD(model.classifier.parameters(), lr=lr, momentum=0.9)
-
     # 4) Run training
-
     print('Beginning {} training...'.format(architecture))
     start = timer()
 
@@ -263,12 +260,16 @@ def save_checkpoint(model):
     elif model.architecture in ['resnet50']:
         points['fc'] = model.fc
 
-    # Parent folder, model folder, prepend fname with model arch, timestamp
-    fpath = 'model_checkpoints\\' \
-        + model.architecture + '\\' \
-        + model.architecture + '_' \
+    parent_dir = 'model_checkpoints'
+    model_dir = model.architecture
+    fdir = os.path.join(parent_dir, model_dir)
+    fname = model.architecture + '_' \
         + datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S") \
         + '.tar'
+    fpath = os.path.join(fdir, fname)
+
+    if not os.path.exists(fdir):
+        os.makedirs(fdir, exist_ok=True)
 
     torch.save(points, fpath)
 
