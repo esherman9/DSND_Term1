@@ -22,12 +22,14 @@ parser.add_argument(
 # parser.add_argument( # Prevent user error in save directories
 #     'save_dir', type=str, help='directory to save model checkpoints')
 parser.add_argument(
-    'arch', type=str, help="model architecture (e.g. 'vgg16')",
-    choices = ['vgg16', 'vgg16_bn', 'resnet50', 'densenet121', 'squeezenet'])
+    'arch', type=str, choices=['vgg16','vgg16_bn','resnet50','densenet121'],
+    help="model architecture (e.g. 'vgg16')")
 parser.add_argument(
-    '--learn_rate', type=int, default=0.01, help='learning rate hyperparameter')
+    '--learn_rate', type=float, default=0.01,
+    help='learning rate for SGD (def=.01)')
 parser.add_argument(
-    '--epochs', type=int, default=2, help='number of epochs to train over')
+    '--epochs', type=int, default=2, choices=range(1, 50),
+    help='number of epochs to train over')
 parser.add_argument(
     '--GPU', help='use GPU for training', action='store_true')
 

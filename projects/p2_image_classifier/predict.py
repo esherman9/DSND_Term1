@@ -5,13 +5,16 @@ import modelfuncs
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    "--image_path", type=str, help="image path")
+    "--image_path", type=str,
+    help="Image path. If none, random image chosen from test folder.")
 parser.add_argument(
-    "--checkpoint", type=str, help="checkpoint file name")
+    "--checkpoint", type=str,
+    help="name of checkpoint file in model_checkpoints\\arch\\ dir")
 parser.add_argument(
-    "--topk", type=str, default= 3, help="return top k most likely classes")
+    "--topk", type=int, default= 3,
+    help="return top k most likely classes")
 parser.add_argument(
-    "--GPU", help="use GPU for predicting", action="store_true")
+    "--GPU",  action="store_true", help="use GPU for predicting")
 
 args = parser.parse_args()
 
